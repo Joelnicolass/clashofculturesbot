@@ -560,7 +560,9 @@ export default function Home() {
                       key={`building-${idx}`}
                       className="inline-block mr-1 text-yellow-400"
                     >
-                      {ICONS_BUILDINGS[building]}
+                      <div className="scale-80">
+                        {ICONS_BUILDINGS[building]}
+                      </div>
                     </span>
                   );
                 })}
