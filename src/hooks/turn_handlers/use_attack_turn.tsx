@@ -10,6 +10,7 @@ import { Tech } from "../use_advance_tech";
 import { Separator } from "@radix-ui/react-separator";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { IMAGE_RESOURCES } from "@/utils/mappers";
+import { Button } from "@/components/ui/button";
 
 export const useAttackTurn = (
   settlements: Settlement[],
@@ -124,6 +125,10 @@ export const useAttackTurn = (
             de distancia de tus propios barcos.
           </p>
         )}
+
+        <div className="flex mt-4">
+          <Button disabled={true}>Conquisté una ciudad (en desarrollo)</Button>
+        </div>
       </div>
     );
   };
