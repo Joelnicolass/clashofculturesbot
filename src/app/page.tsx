@@ -20,13 +20,14 @@ import {
   Tally4Icon,
   TrendingUp,
 } from "lucide-react";
-import { startTransition, useState } from "react";
+import { ReactNode, startTransition, useState } from "react";
 import { Settlement, useSettlement } from "@/hooks/use_settlement";
 import {
   BuildingType,
   HappinessType,
   IBOActions,
   ResourceType,
+  TechnologicalRootType,
   UnitType,
 } from "@/utils/enums";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
@@ -54,6 +55,7 @@ import {
 import Elephant from "../../public/elephant_icon.svg";
 import Cavalry from "../../public/cavalry_icon.svg";
 import Image from "next/image";
+import { Separator } from "@radix-ui/react-separator";
 
 const UNITS_ICONS = {
   [UnitType.INFANTRY]: <Swords className="w-5 h-5 text-white" />,
@@ -107,6 +109,7 @@ export default function Home() {
     decrementCultureCount,
     incrementCultureCount,
     decrementCultureInPoints,
+    setCultureCount,
   } = useCounter(techCompleteGraph, culturePower);
 
   const { advanceTechnologyTurn } = useAdvanceTechTurn(
@@ -147,6 +150,8 @@ export default function Home() {
     turnCount,
     calculateSettlementLevel
   );
+
+  const [statePhase, setStatePhase] = useState<ReactNode>(null);
 
   const processTurn = () => {
     const mapper: Record<IBOActions, () => void> = {
@@ -253,7 +258,9 @@ export default function Home() {
             <span className="font-bold flex items-center gap-2">
               ¡Reclutar Unidades!
             </span>
-            {Object.keys(unitsToRecruit).length !== 0 && (
+            {Object.values(unitsToRecruit).some(
+              (units) => units.length > 0
+            ) && (
               <>
                 <div className="text-sm text-white/60">
                   Se han reclutado unidades en las siguientes ciudades:
@@ -344,12 +351,11 @@ export default function Home() {
     const chosen = selectWeightedRandom(configuration.actionRates);
     mapper[chosen]();
 
-    console.log(`Turno ${turnCount + 1} - Acción: ${chosen}`);
     incrementTurnCount();
   };
 
   return (
-    <div className="flex flex-col min-h-screen gap-4 p-4">
+    <div className="flex flex-col min-h-screen gap-4 p-2">
       <HeaderSection title={configuration.name} turnCount={turnCount} />
 
       <div
@@ -378,7 +384,56 @@ export default function Home() {
           onClick={() => {
             startTransition(() => {
               // ejecutar turnos de fase de estado
+
+              // paso 1 -> incrementar felicidad de todas las ciudades
               incrementHappinessAllCities();
+
+              // paso 2 -> ejecutar una acción de turno
+              processTurn();
+
+              // paso 3 -> avanzar tecnología gratuitamente
+              const { tech } = advanceTechnologyTurn((effectCategory) => {
+                addBuilding(effectCategory as BuildingType);
+              });
+
+              // paso 4 -> ganar cultura por cada dos avances en root de cultura
+
+              const cultureGained = (techRoot: TechnologicalRootType) => {
+                const techs = techCompleteGraph[techRoot];
+                return Math.floor(techs.length / 2);
+              };
+
+              const totalCultureGained = cultureGained(
+                TechnologicalRootType.CULTURE
+              );
+
+              setCultureCount((prev) => prev + totalCultureGained);
+
+              setStatePhase(
+                <div className="text-white flex flex-col gap-2">
+                  <span className="font-bold flex items-center gap-2">
+                    ¡Fase de Estado Ejecutada!
+                  </span>
+                  <div className="text-sm text-white/60">
+                    Se ha incrementado la felicidad de todas las ciudades y se
+                    han ganado{" "}
+                    <span className="font-semibold text-yellow-400">
+                      {totalCultureGained} puntos de cultura
+                    </span>
+                    .
+                  </div>
+
+                  {tech && (
+                    <div className="text-sm text-white/60">
+                      Se ha avanzado en la tecnología{" "}
+                      <span className="font-semibold text-indigo-300">
+                        {tech.name}
+                      </span>{" "}
+                      sin coste.
+                    </div>
+                  )}
+                </div>
+              );
             });
           }}
           style={{ gridArea: "state" }}
@@ -392,6 +447,8 @@ export default function Home() {
         {turnSection || (
           <div className="text-white/60 text-sm">Nada por aquí...</div>
         )}
+        <Separator className="bg-white/20 my-2 border-none h-px" />
+        <div className="mt-2 text-white/60">{statePhase || null}</div>
       </GlassCard>
 
       <GlassCard>

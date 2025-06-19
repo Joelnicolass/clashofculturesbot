@@ -114,6 +114,11 @@ export const useAdvanceTechTurn = (
         </div>
       );
     }
+
+    return {
+      tech,
+      effectCategory: tech?.effectCategory || null,
+    };
   };
 
   return {
