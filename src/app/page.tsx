@@ -371,6 +371,7 @@ export default function Home() {
           className="w-full text-lg cursor-pointer"
           onClick={() => {
             startTransition(() => {
+              setStatePhase(null);
               processTurn();
             });
           }}
@@ -447,8 +448,8 @@ export default function Home() {
         {turnSection || (
           <div className="text-white/60 text-sm">Nada por aquí...</div>
         )}
-        {statePhase || (
-          <Separator className="bg-white/20 my-2 border-none h-px" />
+        {statePhase && (
+          <Separator className="bg-white/20 my-4 border-none h-px" />
         )}
         <div className="mt-2 text-white/60">{statePhase || null}</div>
       </GlassCard>
