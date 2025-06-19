@@ -1,103 +1,595 @@
+"use client";
+
+import { useAdvanceTech } from "@/hooks/use_advance_tech";
+import { Button } from "@/components/ui/button";
+import { TechnologySection } from "@/components/custom/technology_section";
+import { HeaderSection } from "@/components/custom/header_section";
+import { GlassCard } from "@/components/custom/glass_card";
+import {
+  Anchor,
+  BookOpen,
+  Building,
+  Crown,
+  Dot,
+  Hammer,
+  Laugh,
+  PersonStanding,
+  Play,
+  Sailboat,
+  Swords,
+  Tally4Icon,
+  TrendingUp,
+} from "lucide-react";
+import { startTransition, useState } from "react";
+import { Settlement, useSettlement } from "@/hooks/use_settlement";
+import {
+  BuildingType,
+  HappinessType,
+  IBOActions,
+  ResourceType,
+  UnitType,
+} from "@/utils/enums";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { useAdvanceTechTurn } from "@/hooks/turn_handlers/use_advance_tech_turn";
+import { numberToText, selectWeightedRandom } from "@/utils/functions";
+import { useAttackTurn } from "@/hooks/turn_handlers/use_attack_turn";
+import { useCounter } from "@/hooks/use_counter";
+import { useBuildTurn } from "@/hooks/turn_handlers/use_build_turn";
+import { useBuildTrack } from "@/hooks/use_build_track";
+import { ConfigurationSection } from "@/components/custom/configuration_section";
+import { useInfluenceTurn } from "@/hooks/turn_handlers/use_influence_turn";
+import {
+  DEFAUlT_ACTION_RATES,
+  DEFAULT_RECRUIT_RATES,
+  HAPPINESS_STAUS_COLORS,
+  ICONS_BUILDINGS,
+  IMAGE_RESOURCES,
+} from "@/utils/mappers";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import Elephant from "../../public/elephant_icon.svg";
+import Cavalry from "../../public/cavalry_icon.svg";
 import Image from "next/image";
 
-export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+const UNITS_ICONS = {
+  [UnitType.INFANTRY]: <Swords className="w-5 h-5 text-white" />,
+  [UnitType.CAVALRY]: (
+    <Image className="w-5 h-5 invert" src={Cavalry} alt="Infantry Icon" />
+  ),
+  [UnitType.ELEPHANT]: (
+    <Image className="w-5 h-5 invert" src={Elephant} alt="Infantry Icon" />
+  ),
+  [UnitType.LEADER]: <Crown className="w-5 h-5 text-white" />,
+  [UnitType.SHIP]: <Sailboat className="w-5 h-5 text-white" />,
+};
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+export default function Home() {
+  const [configuration, setConfiguration] = useState<{
+    name: string;
+    actionRates: Record<IBOActions, number>;
+  }>({
+    name: "BOT Clash of Cultures",
+    actionRates: DEFAUlT_ACTION_RATES,
+  });
+
+  const [turnSection, setTurnSection] = useState<React.ReactNode>(null);
+
+  const {
+    techCompleteGraph,
+    unlockTech,
+    unlockedTechs,
+    culturePower,
+    landPower,
+    navalPower,
+    governmentModel,
+    setGovernmentModel,
+  } = useAdvanceTech();
+
+  const {
+    initializeSettlement,
+    settlements,
+    calculateSettlementLevel,
+    addBuildingToSettlement,
+    moveColonToSettlement,
+    setSettlements,
+    incrementHappinessAllCities,
+  } = useSettlement();
+
+  const {
+    totalTechs,
+    turnCount,
+    cultureCount,
+    incrementTurnCount,
+    decrementCultureCount,
+    incrementCultureCount,
+    decrementCultureInPoints,
+  } = useCounter(techCompleteGraph, culturePower);
+
+  const { advanceTechnologyTurn } = useAdvanceTechTurn(
+    unlockedTechs,
+    unlockTech,
+    setTurnSection,
+    governmentModel,
+    setGovernmentModel
+  );
+
+  const { buildingTrack, addBuilding, moveAllBuildingsToLeft } =
+    useBuildTrack();
+
+  const { buildTurn } = useBuildTurn(
+    settlements,
+    buildingTrack,
+    initializeSettlement,
+    addBuildingToSettlement,
+    moveAllBuildingsToLeft,
+    moveColonToSettlement,
+    setTurnSection
+  );
+
+  const { attackTurn } = useAttackTurn(
+    settlements,
+    landPower,
+    navalPower,
+    setTurnSection,
+    numberToText,
+    techCompleteGraph
+  );
+
+  const { influenceTurn } = useInfluenceTurn(
+    setTurnSection,
+    settlements,
+    cultureCount,
+    decrementCultureInPoints,
+    turnCount,
+    calculateSettlementLevel
+  );
+
+  const processTurn = () => {
+    const mapper: Record<IBOActions, () => void> = {
+      [IBOActions.ADVANCE]: () => {
+        advanceTechnologyTurn((effectCategory) => {
+          addBuilding(effectCategory as BuildingType);
+        });
+        incrementCultureCount();
+      },
+      [IBOActions.ATACK]: () => {
+        attackTurn();
+      },
+      [IBOActions.BUILD]: () => {
+        buildTurn();
+      },
+      [IBOActions.INFLUENCE]: () => {
+        influenceTurn();
+      },
+      [IBOActions.RECRUIT]: () => {
+        // verificar si puedo construir unidades avanzadas
+        const canRecruitAdvancedUnits = settlements.some((settlement) =>
+          settlement.buildings.includes(BuildingType.MARKET)
+        );
+
+        // verificar si ya hay un líder (solo puede haber uno vivo a la vez)
+        let hasLeader = settlements.some((settlement) =>
+          settlement.units.some((unit) => unit === UnitType.LEADER)
+        );
+
+        // buscar todas las ciudades felices
+        const happySettlements = settlements.filter(
+          (settlement) => settlement.happiness === HappinessType.HAPPY
+        );
+
+        // comprobar que el nivel de la ciudad sea menor o igual a la cantidad de unidades que tenga
+        const validSettlements = happySettlements.filter(
+          (settlement) =>
+            calculateSettlementLevel(settlement) > settlement.units.length
+        );
+
+        // construir unidades en todas las ciudades validas, si la ciduad tiene un puerto, construir tambien un barco
+
+        const unitsToRecruit: Record<Settlement["indicator"], UnitType[]> = {
+          [ResourceType.FOOD]: [],
+          [ResourceType.WOOD]: [],
+          [ResourceType.STONE]: [],
+          [ResourceType.SCIENCE]: [],
+          [ResourceType.GOLD]: [],
+        };
+
+        const shipsToRecruit: Record<Settlement["indicator"], number> = {
+          [ResourceType.FOOD]: 0,
+          [ResourceType.WOOD]: 0,
+          [ResourceType.STONE]: 0,
+          [ResourceType.SCIENCE]: 0,
+          [ResourceType.GOLD]: 0,
+        };
+
+        validSettlements.forEach((settlement) => {
+          // seleccionar una unidad por ciudad según rates, respetando un líder único
+          let unitType: UnitType;
+          if (canRecruitAdvancedUnits) {
+            unitType = selectWeightedRandom(DEFAULT_RECRUIT_RATES);
+            if (unitType === UnitType.LEADER) {
+              if (hasLeader) {
+                unitType = UnitType.INFANTRY;
+              } else {
+                // marcamos que ya reclutamos líder
+                hasLeader = true;
+              }
+            }
+          } else {
+            unitType = UnitType.INFANTRY;
+          }
+          unitsToRecruit[settlement.indicator].push(unitType);
+        });
+
+        // comprobar todas las ciudades que tengan puerto y agregar un barco
+        happySettlements.forEach((settlement) => {
+          if (settlement.buildings.includes(BuildingType.PORT)) {
+            // si la ciudad tiene puerto, agregar un barco
+            shipsToRecruit[settlement.indicator] += 1;
+          }
+        });
+
+        // agregar las unidades a las ciudades
+        const updatedSettlements = settlements.map((settlement) => {
+          const newUnits = unitsToRecruit[settlement.indicator];
+          if (newUnits.length > 0) {
+            return {
+              ...settlement,
+              units: [...settlement.units, ...newUnits],
+              ships: settlement.ships
+                ? settlement.ships + shipsToRecruit[settlement.indicator]
+                : shipsToRecruit[settlement.indicator],
+            };
+          }
+          return settlement;
+        });
+
+        setSettlements(updatedSettlements);
+        setTurnSection(
+          <div className="text-white flex flex-col gap-2">
+            <span className="font-bold flex items-center gap-2">
+              ¡Reclutar Unidades!
+            </span>
+            {Object.keys(unitsToRecruit).length !== 0 && (
+              <>
+                <div className="text-sm text-white/60">
+                  Se han reclutado unidades en las siguientes ciudades:
+                </div>
+                <div className="text-sm text-white/60">
+                  <div className="flex flex-col gap-1">
+                    {Object.entries(unitsToRecruit).map(
+                      ([indicator, units]) => {
+                        if (units.length === 0) return null;
+                        return (
+                          <div
+                            key={indicator}
+                            className="text-white/60 flex items-center gap-2"
+                          >
+                            {units.map((unit, idx) => (
+                              <span
+                                key={`${indicator}-${idx}`}
+                                className="text-yellow-400 flex items-center gap-1 opacity-80"
+                              >
+                                {UNITS_ICONS[unit]}{" "}
+                                {unit === UnitType.LEADER ? "Líder" : unit}
+                              </span>
+                            ))}
+                            <span>en la ciudad</span>
+                            <Avatar className="inline-block w-5 h-5 border-1 border-white rounded-full">
+                              <AvatarImage
+                                className="w-5 h-5 scale-150"
+                                alt={indicator}
+                                src={IMAGE_RESOURCES[indicator as ResourceType]}
+                              />
+                            </Avatar>
+                            <span className="text-yellow-400">
+                              {
+                                settlements.find(
+                                  (settlement) =>
+                                    settlement.indicator === indicator
+                                )?.name
+                              }
+                            </span>
+                          </div>
+                        );
+                      }
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+            {shipsToRecruit &&
+              Object.values(shipsToRecruit).some((count) => count > 0) && (
+                <div className="text-sm text-white/60 mt-2">
+                  Han surcado los mares:
+                  <div className="flex gap-1 mt-2 flex-col">
+                    {Object.entries(shipsToRecruit).map(
+                      ([indicator, count]) => {
+                        if (count === 0) return null;
+                        return (
+                          <div
+                            key={indicator}
+                            className="text-white/60 flex items-center gap-2"
+                          >
+                            <Sailboat className="text-white/60" />
+                            <span>en el puerto de </span>
+                            <Avatar className="inline-block w-5 h-5 mr-1 border-1 border-white rounded-full">
+                              <AvatarImage
+                                className="w-5 h-5 scale-150"
+                                alt={indicator}
+                                src={IMAGE_RESOURCES[indicator as ResourceType]}
+                              />
+                            </Avatar>
+                            {
+                              settlements.find(
+                                (settlement) =>
+                                  settlement.indicator === indicator
+                              )?.name
+                            }
+                          </div>
+                        );
+                      }
+                    )}
+                  </div>
+                </div>
+              )}
+          </div>
+        );
+      },
+    };
+
+    const chosen = selectWeightedRandom(configuration.actionRates);
+    mapper[chosen]();
+
+    console.log(`Turno ${turnCount + 1} - Acción: ${chosen}`);
+    incrementTurnCount();
+  };
+
+  return (
+    <div className="flex flex-col min-h-screen gap-4 p-4">
+      <HeaderSection title={configuration.name} turnCount={turnCount} />
+
+      <div
+        className="grid gap-2"
+        style={{
+          gridTemplateAreas: `
+            "turn turn state"
+            `,
+          gridTemplateColumns: "1fr 1fr 1fr",
+        }}
+      >
+        <Button
+          className="w-full text-lg cursor-pointer"
+          onClick={() => {
+            startTransition(() => {
+              processTurn();
+            });
+          }}
+          style={{ gridArea: "turn" }}
+        >
+          <Play className="w-5 h-5 mr-2" />
+          Siguiente Turno
+        </Button>
+        <Button
+          className="w-full text-lg cursor-pointer border-1 border-white hover:border-white/40 bg-transparent text-white hover:bg-blue-500 transition-colors"
+          onClick={() => {
+            startTransition(() => {
+              // ejecutar turnos de fase de estado
+              incrementHappinessAllCities();
+            });
+          }}
+          style={{ gridArea: "state" }}
+        >
+          <TrendingUp className="w-5 h-5 mr-2" />
+          Fase de Estado
+        </Button>
+      </div>
+
+      <GlassCard>
+        {turnSection || (
+          <div className="text-white/60 text-sm">Nada por aquí...</div>
+        )}
+      </GlassCard>
+
+      <GlassCard>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-white">
+            Ciudades Fundadas
+          </h2>
+          <span className="text-sm text-white/60">
+            {settlements.length}{" "}
+            {settlements.length === 1 ? "Ciudad" : "Ciudades"}
+          </span>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        <div className="mt-2 grid grid-cols-3 gap-3">
+          {settlements.map((settlement, index) => (
+            <GlassCard
+              key={index}
+              style={{
+                backgroundColor: `
+                  ${
+                    settlement.active
+                      ? "rgba(255, 255, 255, 0.1)"
+                      : "transparent"
+                  }
+                `,
+              }}
+            >
+              <div className="flex flex-col items-center">
+                <div className="text-xs text-white/60 mb-2">
+                  <span className="font-semibold">
+                    lvl {calculateSettlementLevel(settlement)}
+                  </span>
+                </div>
+
+                <Avatar className="border-2 border-white rounded-full mb-1">
+                  <AvatarImage
+                    className="w-8 h-8 scale-150 "
+                    alt={settlement.name}
+                    src={IMAGE_RESOURCES[settlement.indicator]}
+                  />
+                </Avatar>
+                <div className="mt-2 flex items-center justify-center">
+                  <Laugh
+                    className={`w-4 h-4 ${
+                      HAPPINESS_STAUS_COLORS[
+                        settlement.happiness as HappinessType
+                      ]
+                    } mx-auto mb-1`}
+                  />
+                </div>
+                <div className="text-sm font-bold text-white text-center mb-1">
+                  {settlement.name}
+                </div>
+                {settlement.buildings.length > 0 && (
+                  <div className="flex items-center justify-center gap-2 mt-2 mb-2">
+                    {settlement.buildings.map((building, idx) => (
+                      <span
+                        key={idx}
+                        className="text-xs text-white/80 flex items-center gap-2"
+                      >
+                        {ICONS_BUILDINGS[building]}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="text-xs text-white/60">
+                  {settlement.active && (
+                    <span className="inline-flex items-center">
+                      Colono Aquí
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="text-xs text-white/60 mt-1 flex items-center justify-center">
+                <span>{settlement.units.length} Unidad(es)</span>
+              </div>
+            </GlassCard>
+          ))}
+        </div>
+      </GlassCard>
+
+      <div className="grid grid-cols-2 gap-3">
+        <GlassCard className="text-center">
+          <div className="flex items-center justify-between">
+            <Button onClick={decrementCultureCount}>-</Button>
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <PersonStanding className="w-6 h-6 text-indigo-400 mx-auto mb-2" />
+              <div className="text-xl font-bold text-white">{cultureCount}</div>
+              <div className="text-xs text-white/60">Cultura</div>
+            </div>
+            <Button onClick={() => incrementCultureCount(false)}>+</Button>
+          </div>
+        </GlassCard>
+        <GlassCard className="text-center">
+          <div className="flex items-center justify-between">
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <Tally4Icon className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
+              <div className="text-xl font-bold text-white">
+                {Object.values(buildingTrack).map((building, idx) => {
+                  if (!building)
+                    return (
+                      <Dot
+                        key={`building-empty-${idx}`}
+                        className="inline-block w-4 h-4 text-white mr-1"
+                      />
+                    );
+
+                  return (
+                    <span
+                      key={`building-${idx}`}
+                      className="inline-block mr-1 text-yellow-400"
+                    >
+                      {ICONS_BUILDINGS[building]}
+                    </span>
+                  );
+                })}
+              </div>
+
+              <div className="text-xs text-white/60">Edificios pendientes</div>
+            </div>
+          </div>
+        </GlassCard>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <GlassCard className="text-center">
+          <Swords className="w-6 h-6 text-red-400 mx-auto mb-2" />
+          <div className="text-xl font-bold text-white">+{landPower}</div>
+          <div className="text-xs text-white/60">Alcance militar</div>
+        </GlassCard>
+        <GlassCard className="text-center">
+          <Anchor className="w-6 h-6 text-blue-400 mx-auto mb-2" />
+          <div className="text-xl font-bold text-white">+{navalPower}</div>
+          <div className="text-xs text-white/60">Alcance Naval</div>
+        </GlassCard>
+        <GlassCard className="text-center">
+          <PersonStanding className="w-6 h-6 text-indigo-400 mx-auto mb-2" />
+          <div className="text-xl font-bold text-white">+{culturePower}</div>
+          <div className="text-xs text-white/60">Poder Cultural</div>
+        </GlassCard>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <GlassCard className="text-center">
+          <Building className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
+          <div className="text-xl font-bold text-white">
+            {settlements.length}
+          </div>
+          <div className="text-xs text-white/60">Ciudades</div>
+        </GlassCard>
+        <GlassCard className="text-center">
+          <Hammer className="w-6 h-6 text-orange-400 mx-auto mb-2" />
+          <div className="text-xl font-bold text-white">
+            {settlements.reduce(
+              (acc, settlement) => acc + settlement.buildings.length,
+              0
+            ) + settlements.filter((s) => !s.isDestroyed).length}
+          </div>
+          <div className="text-xs text-white/60">Edificios</div>
+        </GlassCard>
+        <GlassCard className="text-center">
+          <BookOpen className="w-6 h-6 text-cyan-400 mx-auto mb-2" />
+          <div className="text-xl font-bold text-white">{totalTechs}</div>
+          <div className="text-xs text-white/60">Tecnologías</div>
+        </GlassCard>
+      </div>
+
+      <Accordion type="single" collapsible>
+        <AccordionItem value="item-1">
+          <AccordionTrigger>Ver Tecnologías Desbloqueadas</AccordionTrigger>
+          <AccordionContent>
+            <TechnologySection techCompleteGraph={techCompleteGraph} />
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
+      <Accordion type="single" collapsible>
+        <AccordionItem value="item-1">
+          <AccordionTrigger>Ver Configuración del BOT</AccordionTrigger>
+          <AccordionContent>
+            <ConfigurationSection
+              configuration={configuration}
+              setConfiguration={setConfiguration}
+            />
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+      <GlassCard className="text-center flex flex-col items-center justify-center">
+        <span className="text-sm text-white/60 flex items-center gap-2 mb-2">
+          POR JOEL NICOLAS SARTORI
+        </span>
+        <div className="flex flex-row items-center justify-between">
+          {UNITS_ICONS[UnitType.INFANTRY]}
+          {UNITS_ICONS[UnitType.CAVALRY]}
+          {UNITS_ICONS[UnitType.ELEPHANT]}
+          {UNITS_ICONS[UnitType.LEADER]}
+          {UNITS_ICONS[UnitType.SHIP]}
+        </div>
+      </GlassCard>
     </div>
   );
 }
