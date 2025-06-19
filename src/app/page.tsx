@@ -449,9 +449,11 @@ export default function Home() {
           <div className="text-white/60 text-sm">Nada por aquí...</div>
         )}
         {statePhase && (
-          <Separator className="bg-white/20 my-4 border-none h-px" />
+          <>
+            <Separator className="bg-white/20 my-4 border-none h-px" />
+            <div className="mt-2 text-white/60">{statePhase}</div>
+          </>
         )}
-        <div className="mt-2 text-white/60">{statePhase || null}</div>
       </GlassCard>
 
       <GlassCard>
