@@ -278,9 +278,7 @@ export default function Home() {
             <span className="font-bold flex items-center gap-2">
               ¡Reclutar Unidades!
             </span>
-            {Object.values(unitsToRecruit).some(
-              (units) => units.length > 0
-            ) && (
+            {Object.values(unitsToRecruit).some((units) => units.length > 0) ? (
               <>
                 <div className="text-sm text-white/60">
                   Se han reclutado unidades en las siguientes ciudades:
@@ -327,6 +325,10 @@ export default function Home() {
                   </div>
                 </div>
               </>
+            ) : (
+              <div className="text-sm text-white/60">
+                No se han reclutado unidades en ninguna ciudad.
+              </div>
             )}
             {shipsToRecruit &&
               Object.values(shipsToRecruit).some((count) => count > 0) && (
@@ -399,11 +401,11 @@ export default function Home() {
           style={{ gridArea: "turn" }}
         >
           <Play className="w-5 h-5 mr-2" />
-          Siguiente Turno
+          Sig. Acción
         </Button>
 
         <GlassCard
-          className="w-[100px] h-[50px] rounded-md "
+          className="w-full h-[50px] rounded-md "
           style={{
             gridArea: "track",
             display: "grid",
