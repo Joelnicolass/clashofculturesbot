@@ -203,6 +203,32 @@ export const useSettlement = () => {
     };
   };
 
+  const conquestSettlement = (buildings: BuildingType[]) => {
+    // si tengo todos los asentamientos construidos, no puedo conquistar más
+    if (settlements.length >= Object.keys(ResourceType).length) return null;
+
+    // conquistar equivale a crear un nuevo asentamiento pero con la felicidad en enojo.
+    const newIndicator = Object.values(ResourceType).find(
+      (res) => !settlements.some((s) => s.indicator === res)
+    );
+    if (!newIndicator) return null;
+
+    const newName = `Conquistado ${newIndicator}`;
+    const newSettlement = createSettlement(newIndicator, newName);
+    newSettlement.happiness = HappinessType.ANGRY; // felicidad en enojo al conquistar
+    newSettlement.buildings = buildings; // asignar edificios conquistados
+    const updatedSettlements = [...settlements, newSettlement];
+    const selectActiveSettlement =
+      _evaluateMinimumBuildings(updatedSettlements);
+    const settlementsWithActiveUpdated = _setSettlementActive(
+      selectActiveSettlement.indicator,
+      updatedSettlements
+    );
+
+    setSettlements(settlementsWithActiveUpdated);
+    return newSettlement;
+  };
+
   return {
     settlements,
     initializeSettlement,
@@ -215,5 +241,6 @@ export const useSettlement = () => {
     findSettlementMinimumBuildings,
     addBuildingToSettlement,
     setSettlements,
+    conquestSettlement,
   };
 };

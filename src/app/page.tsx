@@ -8,6 +8,7 @@ import { GlassCard } from "@/components/custom/glass_card";
 import {
   Anchor,
   BookOpen,
+  Box,
   Building,
   Crown,
   Dot,
@@ -20,7 +21,7 @@ import {
   Tally4Icon,
   TrendingUp,
 } from "lucide-react";
-import { ReactNode, startTransition, useState } from "react";
+import { ReactNode, startTransition, useEffect, useState } from "react";
 import { Settlement, useSettlement } from "@/hooks/use_settlement";
 import {
   BuildingType,
@@ -99,6 +100,7 @@ export default function Home() {
     moveColonToSettlement,
     setSettlements,
     incrementHappinessAllCities,
+    conquestSettlement,
   } = useSettlement();
 
   const {
@@ -139,7 +141,8 @@ export default function Home() {
     navalPower,
     setTurnSection,
     numberToText,
-    techCompleteGraph
+    techCompleteGraph,
+    conquestSettlement
   );
 
   const { influenceTurn } = useInfluenceTurn(
@@ -151,13 +154,30 @@ export default function Home() {
     calculateSettlementLevel
   );
 
+  const [counterEvent, setCounterEvent] = useState<number>(3);
+  const decrementCounterEvent = () => {
+    if (counterEvent <= 0) {
+      setCounterEvent(3);
+      return;
+    }
+    setCounterEvent((prev) => prev - 1);
+  };
   const [statePhase, setStatePhase] = useState<ReactNode>(null);
+
+  useEffect(() => {
+    if (counterEvent <= 0) {
+      setCounterEvent(3);
+      alert("Juega carta de evento");
+      return;
+    }
+  }, [counterEvent]);
 
   const processTurn = () => {
     const mapper: Record<IBOActions, () => void> = {
       [IBOActions.ADVANCE]: () => {
         advanceTechnologyTurn((effectCategory) => {
           addBuilding(effectCategory as BuildingType);
+          decrementCounterEvent();
         });
         incrementCultureCount();
       },
@@ -350,6 +370,7 @@ export default function Home() {
 
     const chosen = selectWeightedRandom(configuration.actionRates);
     mapper[chosen]();
+    console.log(`Turno ${turnCount + 1} - Acción: ${chosen}`);
 
     incrementTurnCount();
   };
@@ -359,16 +380,16 @@ export default function Home() {
       <HeaderSection title={configuration.name} turnCount={turnCount} />
 
       <div
-        className="grid gap-2"
+        className="grid gap-2 items-center"
         style={{
           gridTemplateAreas: `
-            "turn turn state"
+            "turn track state"
             `,
           gridTemplateColumns: "1fr 1fr 1fr",
         }}
       >
         <Button
-          className="w-full text-lg cursor-pointer"
+          className="w-full text-lg cursor-pointer h-[50px]"
           onClick={() => {
             startTransition(() => {
               setStatePhase(null);
@@ -380,8 +401,24 @@ export default function Home() {
           <Play className="w-5 h-5 mr-2" />
           Siguiente Turno
         </Button>
+
+        <GlassCard
+          className="w-[100px] h-[50px] rounded-md "
+          style={{
+            gridArea: "track",
+            display: "grid",
+            placeItems: "center",
+          }}
+        >
+          <div className="flex gap-2 items-center justify-center">
+            {Array.from({ length: counterEvent }).map((_, idx) => (
+              <Box key={`event-${idx}`} className="w-4 h-4 text-white" />
+            ))}
+          </div>
+        </GlassCard>
+
         <Button
-          className="w-full text-lg cursor-pointer border-1 border-white hover:border-white/40 bg-transparent text-white hover:bg-blue-500 transition-colors"
+          className="w-full h-[50px] text-lg cursor-pointer border-1 border-white hover:border-white/40 bg-transparent text-white hover:bg-blue-500 transition-colors"
           onClick={() => {
             startTransition(() => {
               // ejecutar turnos de fase de estado
@@ -565,9 +602,7 @@ export default function Home() {
                       key={`building-${idx}`}
                       className="inline-block mr-1 text-yellow-400"
                     >
-                      <div className="scale-80">
-                        {ICONS_BUILDINGS[building]}
-                      </div>
+                      <div>{ICONS_BUILDINGS[building]}</div>
                     </span>
                   );
                 })}
