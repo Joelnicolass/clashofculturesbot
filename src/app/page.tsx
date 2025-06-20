@@ -380,14 +380,20 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen gap-4 p-2">
       <HeaderSection title={configuration.name} turnCount={turnCount} />
-
+      <GlassCard className="w-full h-[50px] rounded-md min-w-[100px]">
+        <div className="flex gap-2 items-center justify-center">
+          {Array.from({ length: counterEvent }).map((_, idx) => (
+            <Box key={`event-${idx}`} className="w-4 h-4 text-white" />
+          ))}
+        </div>
+      </GlassCard>
       <div
         className="grid gap-2 items-center"
         style={{
           gridTemplateAreas: `
-            "turn track state"
+            "turn turn state"
             `,
-          gridTemplateColumns: "1fr 1fr 1fr",
+          gridTemplateColumns: "1fr 0.5fr 1fr",
         }}
       >
         <Button
@@ -403,21 +409,6 @@ export default function Home() {
           <Play className="w-5 h-5 mr-2" />
           Sig. Acción
         </Button>
-
-        <GlassCard
-          className="w-full h-[50px] rounded-md "
-          style={{
-            gridArea: "track",
-            display: "grid",
-            placeItems: "center",
-          }}
-        >
-          <div className="flex gap-2 items-center justify-center">
-            {Array.from({ length: counterEvent }).map((_, idx) => (
-              <Box key={`event-${idx}`} className="w-4 h-4 text-white" />
-            ))}
-          </div>
-        </GlassCard>
 
         <Button
           className="w-full h-[50px] text-lg cursor-pointer border-1 border-white hover:border-white/40 bg-transparent text-white hover:bg-blue-500 transition-colors"
