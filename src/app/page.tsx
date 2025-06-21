@@ -14,6 +14,7 @@ import {
   Dot,
   Hammer,
   Laugh,
+  MessageCircleMore,
   PersonStanding,
   Play,
   Sailboat,
@@ -57,6 +58,16 @@ import Elephant from "../../public/elephant_icon.svg";
 import Cavalry from "../../public/cavalry_icon.svg";
 import Image from "next/image";
 import { Separator } from "@radix-ui/react-separator";
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogOverlay,
+} from "@/components/ui/alert-dialog";
 
 const UNITS_ICONS = {
   [UnitType.INFANTRY]: <Swords className="w-5 h-5 text-white" />,
@@ -171,6 +182,14 @@ export default function Home() {
       return;
     }
   }, [counterEvent]);
+
+  // TODO -> SEPARAR
+  const [utilizedModalWithResults, setUtilizedModalWithResults] =
+    useState<boolean>(false);
+  const [modalResults, setModalResults] = useState<boolean>(false);
+
+  const handleToggleUtilizeModalResults = () =>
+    setUtilizedModalWithResults((prev) => !prev);
 
   // TODO -> SEPARAR
   const recruitTurn = () => {
@@ -376,6 +395,10 @@ export default function Home() {
     console.log(`Turno ${turnCount + 1} - Acción: ${chosen}`);
 
     incrementTurnCount();
+
+    if (utilizedModalWithResults) {
+      setModalResults(true);
+    }
   };
 
   return (
@@ -691,6 +714,10 @@ export default function Home() {
                           </span>
                         </div>
                       );
+
+                      if (utilizedModalWithResults) {
+                        setModalResults(true);
+                      }
                     });
                   }}
                 >
@@ -707,6 +734,10 @@ export default function Home() {
                         decrementCounterEvent();
                         addBuilding(effectCategory as BuildingType);
                       });
+
+                      if (utilizedModalWithResults) {
+                        setModalResults(true);
+                      }
                     });
                   }}
                 >
@@ -717,6 +748,9 @@ export default function Home() {
                   onClick={() => {
                     startTransition(() => {
                       buildTurn();
+                      if (utilizedModalWithResults) {
+                        setModalResults(true);
+                      }
                     });
                   }}
                 >
@@ -727,6 +761,9 @@ export default function Home() {
                   onClick={() => {
                     startTransition(() => {
                       attackTurn();
+                      if (utilizedModalWithResults) {
+                        setModalResults(true);
+                      }
                     });
                   }}
                 >
@@ -737,6 +774,9 @@ export default function Home() {
                   onClick={() => {
                     startTransition(() => {
                       influenceTurn();
+                      if (utilizedModalWithResults) {
+                        setModalResults(true);
+                      }
                     });
                   }}
                 >
@@ -751,6 +791,9 @@ export default function Home() {
                   onClick={() => {
                     startTransition(() => {
                       incrementHappinessAllCities();
+                      if (utilizedModalWithResults) {
+                        setModalResults(true);
+                      }
                     });
                   }}
                 >
@@ -762,6 +805,9 @@ export default function Home() {
                   onClick={() => {
                     startTransition(() => {
                       recruitTurn();
+                      if (utilizedModalWithResults) {
+                        setModalResults(true);
+                      }
                     });
                   }}
                 >
@@ -804,6 +850,9 @@ export default function Home() {
                           </div>
                         </div>
                       );
+                      if (utilizedModalWithResults) {
+                        setModalResults(true);
+                      }
                     });
                   }}
                 >
@@ -816,6 +865,9 @@ export default function Home() {
                       advanceTechnologyTurn((effectCategory) => {
                         addBuilding(effectCategory as BuildingType);
                       });
+                      if (utilizedModalWithResults) {
+                        setModalResults(true);
+                      }
                     });
                   }}
                 >
@@ -838,6 +890,9 @@ export default function Home() {
                           </div>
                         </div>
                       );
+                      if (utilizedModalWithResults) {
+                        setModalResults(true);
+                      }
                     });
                   }}
                 >
@@ -853,6 +908,34 @@ export default function Home() {
         <AccordionItem value="item-1">
           <AccordionTrigger>Ver Configuración del BOT</AccordionTrigger>
           <AccordionContent>
+            <div
+              className={`${
+                utilizedModalWithResults ? "bg-blue-500" : "bg-gray-800"
+              } text-white`}
+              style={{
+                cursor: "pointer",
+                border: "1px solid #ccc",
+                padding: "10px",
+                borderRadius: "8px",
+
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                marginBottom: "10px",
+              }}
+              onClick={handleToggleUtilizeModalResults}
+            >
+              <MessageCircleMore className="w-5 h-5 text-white" />
+              {utilizedModalWithResults ? (
+                <span className="text-sm text-white/60">
+                  No mostrar Modal de Resultados
+                </span>
+              ) : (
+                <span className="text-sm text-white/60">
+                  Mostrar Modal de Resultados
+                </span>
+              )}
+            </div>
             <ConfigurationSection
               configuration={configuration}
               setConfiguration={setConfiguration}
@@ -872,6 +955,38 @@ export default function Home() {
           {UNITS_ICONS[UnitType.SHIP]}
         </div>
       </GlassCard>
+
+      <AlertDialog
+        open={utilizedModalWithResults && modalResults}
+        onOpenChange={setModalResults}
+      >
+        <AlertDialogOverlay className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center" />
+        <AlertDialogContent
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.8)",
+            backdropFilter: "blur(10px)",
+            WebkitBackdropFilter: "blur(10px)",
+            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+            border: "1px solid rgba(255, 255, 255, 0.2)",
+          }}
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle>{configuration.name}</AlertDialogTitle>
+          </AlertDialogHeader>
+          <div>{turnSection}</div>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() => {
+                startTransition(() => {
+                  setModalResults(false);
+                });
+              }}
+            >
+              Continuar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
