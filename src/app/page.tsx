@@ -475,169 +475,6 @@ export default function Home() {
         </Button>
       </div>
 
-      <Accordion type="single" collapsible>
-        <AccordionItem value="item-1">
-          <AccordionTrigger>Turnos Manuales</AccordionTrigger>
-          <AccordionContent>
-            <GlassCard className="p-4">
-              <div className="flex flex-col gap-2">
-                <Button
-                  className="w-full"
-                  onClick={() => {
-                    startTransition(() => {
-                      setTurnSection(
-                        <div className="text-white flex flex-col gap-2">
-                          <span className="font-bold flex items-center gap-2">
-                            ¡Acción Obtenida!
-                          </span>
-                          <div className="text-sm text-white/60">
-                            Se ha obtenido una acción de turno aleatoria.
-                          </div>
-                        </div>
-                      );
-                      const action = selectWeightedRandom(
-                        configuration.actionRates
-                      );
-                      console.log(`Acción obtenida: ${action}`);
-                      setTurnSection(
-                        <div className="text-white flex flex-col gap-2">
-                          <span className="font-bold flex items-center gap-2">
-                            Acción Obtenida: {action}
-                          </span>
-                        </div>
-                      );
-                    });
-                  }}
-                >
-                  Obtener Acción
-                </Button>
-
-                <Button
-                  className="w-full"
-                  onClick={() => {
-                    startTransition(() => {
-                      advanceTechnologyTurn((effectCategory) => {
-                        decrementCounterEvent();
-                        addBuilding(effectCategory as BuildingType);
-                      });
-                    });
-                  }}
-                >
-                  Avance Tecnológico
-                </Button>
-                <Button
-                  className="w-full"
-                  onClick={() => {
-                    startTransition(() => {
-                      buildTurn();
-                    });
-                  }}
-                >
-                  Construir Edificio
-                </Button>
-                <Button
-                  className="w-full"
-                  onClick={() => {
-                    startTransition(() => {
-                      attackTurn();
-                    });
-                  }}
-                >
-                  Atacar Ciudad
-                </Button>
-                <Button
-                  className="w-full"
-                  onClick={() => {
-                    startTransition(() => {
-                      influenceTurn();
-                    });
-                  }}
-                >
-                  Influir en Ciudad
-                </Button>
-
-                {/* 
-                    incrementar felicidad de todas las ciudades
-                  */}
-                <Button
-                  className="w-full"
-                  onClick={() => {
-                    startTransition(() => {
-                      incrementHappinessAllCities();
-                    });
-                  }}
-                >
-                  Incrementar Felicidad
-                </Button>
-
-                <Button
-                  className="w-full"
-                  onClick={() => {
-                    startTransition(() => {
-                      recruitTurn();
-                    });
-                  }}
-                >
-                  Reclutar Unidades
-                </Button>
-
-                <Button
-                  className="w-full"
-                  onClick={() => {
-                    startTransition(() => {
-                      setTurnSection(
-                        <div className="text-white flex flex-col gap-2">
-                          <span className="font-bold flex items-center gap-2">
-                            ¡Fase de Estado Ejecutada!
-                          </span>
-                          <div className="text-sm text-white/60">
-                            Se ha ejecutado la fase de estado, obteniendo puntos
-                            de cultura.
-                          </div>
-                        </div>
-                      );
-                      const cultureGained = Math.floor(
-                        techCompleteGraph[TechnologicalRootType.CULTURE]
-                          .length / 2
-                      );
-                      setCultureCount((prev) => prev + cultureGained);
-                      setStatePhase(
-                        <div className="text-white flex flex-col gap-2">
-                          <span className="font-bold flex items-center gap-2">
-                            ¡Fase de Estado Ejecutada!
-                          </span>
-                          <div className="text-sm text-white/60">
-                            Se han obtenido{" "}
-                            <span className="font-semibold text-yellow-400">
-                              {cultureGained} puntos de cultura
-                            </span>
-                            .
-                          </div>
-                        </div>
-                      );
-                    });
-                  }}
-                >
-                  (Fase de Estado) Obenter puntos de cultura
-                </Button>
-                <Button
-                  className="w-full"
-                  onClick={() => {
-                    startTransition(() => {
-                      advanceTechnologyTurn((effectCategory) => {
-                        addBuilding(effectCategory as BuildingType);
-                      });
-                    });
-                  }}
-                >
-                  (Fase de Estado) Avance gratuito
-                </Button>
-              </div>
-            </GlassCard>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-
       <GlassCard>
         {turnSection || (
           <div className="text-white/60 text-sm">Nada por aquí...</div>
@@ -819,6 +656,195 @@ export default function Home() {
           <AccordionTrigger>Ver Tecnologías Desbloqueadas</AccordionTrigger>
           <AccordionContent>
             <TechnologySection techCompleteGraph={techCompleteGraph} />
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
+      <Accordion type="single" collapsible>
+        <AccordionItem value="item-1">
+          <AccordionTrigger>Ver Gestión Manual de acciones</AccordionTrigger>
+          <AccordionContent>
+            <GlassCard className="p-4">
+              <div className="flex flex-col gap-2">
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    startTransition(() => {
+                      setTurnSection(
+                        <div className="text-white flex flex-col gap-2">
+                          <span className="font-bold flex items-center gap-2">
+                            ¡Acción Obtenida!
+                          </span>
+                          <div className="text-sm text-white/60">
+                            Se ha obtenido una acción de turno aleatoria.
+                          </div>
+                        </div>
+                      );
+                      const action = selectWeightedRandom(
+                        configuration.actionRates
+                      );
+                      console.log(`Acción obtenida: ${action}`);
+                      setTurnSection(
+                        <div className="text-white flex flex-col gap-2">
+                          <span className="font-bold flex items-center gap-2">
+                            Acción Obtenida: {action}
+                          </span>
+                        </div>
+                      );
+                    });
+                  }}
+                >
+                  Obtener Acción
+                </Button>
+
+                <Separator className="bg-white/20 my-4 border-none h-px" />
+
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    startTransition(() => {
+                      advanceTechnologyTurn((effectCategory) => {
+                        decrementCounterEvent();
+                        addBuilding(effectCategory as BuildingType);
+                      });
+                    });
+                  }}
+                >
+                  Avance Tecnológico
+                </Button>
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    startTransition(() => {
+                      buildTurn();
+                    });
+                  }}
+                >
+                  Construir Edificio
+                </Button>
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    startTransition(() => {
+                      attackTurn();
+                    });
+                  }}
+                >
+                  Atacar Ciudad
+                </Button>
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    startTransition(() => {
+                      influenceTurn();
+                    });
+                  }}
+                >
+                  Influir en Ciudad
+                </Button>
+
+                {/* 
+                    incrementar felicidad de todas las ciudades
+                  */}
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    startTransition(() => {
+                      incrementHappinessAllCities();
+                    });
+                  }}
+                >
+                  Incrementar Felicidad
+                </Button>
+
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    startTransition(() => {
+                      recruitTurn();
+                    });
+                  }}
+                >
+                  Reclutar Unidades
+                </Button>
+
+                <Separator className="bg-white/20 my-4 border-none h-px" />
+
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    startTransition(() => {
+                      setTurnSection(
+                        <div className="text-white flex flex-col gap-2">
+                          <span className="font-bold flex items-center gap-2">
+                            ¡Fase de Estado Ejecutada!
+                          </span>
+                          <div className="text-sm text-white/60">
+                            Se ha ejecutado la fase de estado, obteniendo puntos
+                            de cultura.
+                          </div>
+                        </div>
+                      );
+                      const cultureGained = Math.floor(
+                        techCompleteGraph[TechnologicalRootType.CULTURE]
+                          .length / 2
+                      );
+                      setCultureCount((prev) => prev + cultureGained);
+                      setStatePhase(
+                        <div className="text-white flex flex-col gap-2">
+                          <span className="font-bold flex items-center gap-2">
+                            ¡Fase de Estado Ejecutada!
+                          </span>
+                          <div className="text-sm text-white/60">
+                            Se han obtenido{" "}
+                            <span className="font-semibold text-yellow-400">
+                              {cultureGained} puntos de cultura
+                            </span>
+                            .
+                          </div>
+                        </div>
+                      );
+                    });
+                  }}
+                >
+                  (Fase de Estado) Obenter puntos de cultura
+                </Button>
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    startTransition(() => {
+                      advanceTechnologyTurn((effectCategory) => {
+                        addBuilding(effectCategory as BuildingType);
+                      });
+                    });
+                  }}
+                >
+                  (Fase de Estado) Avance gratuito
+                </Button>
+
+                <Separator className="bg-white/20 my-4 border-none h-px" />
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    startTransition(() => {
+                      incrementTurnCount();
+                      setTurnSection(
+                        <div className="text-white flex flex-col gap-2">
+                          <span className="font-bold flex items-center gap-2">
+                            ¡Turno Incrementado!
+                          </span>
+                          <div className="text-sm text-white/60">
+                            Se ha incrementado el contador de turnos.
+                          </div>
+                        </div>
+                      );
+                    });
+                  }}
+                >
+                  Contador de Turnos +1
+                </Button>
+              </div>
+            </GlassCard>
           </AccordionContent>
         </AccordionItem>
       </Accordion>
