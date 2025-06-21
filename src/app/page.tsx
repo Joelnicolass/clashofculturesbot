@@ -580,6 +580,58 @@ export default function Home() {
                 >
                   Reclutar Unidades
                 </Button>
+
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    startTransition(() => {
+                      setTurnSection(
+                        <div className="text-white flex flex-col gap-2">
+                          <span className="font-bold flex items-center gap-2">
+                            ¡Fase de Estado Ejecutada!
+                          </span>
+                          <div className="text-sm text-white/60">
+                            Se ha ejecutado la fase de estado, obteniendo puntos
+                            de cultura.
+                          </div>
+                        </div>
+                      );
+                      const cultureGained = Math.floor(
+                        techCompleteGraph[TechnologicalRootType.CULTURE]
+                          .length / 2
+                      );
+                      setCultureCount((prev) => prev + cultureGained);
+                      setStatePhase(
+                        <div className="text-white flex flex-col gap-2">
+                          <span className="font-bold flex items-center gap-2">
+                            ¡Fase de Estado Ejecutada!
+                          </span>
+                          <div className="text-sm text-white/60">
+                            Se han obtenido{" "}
+                            <span className="font-semibold text-yellow-400">
+                              {cultureGained} puntos de cultura
+                            </span>
+                            .
+                          </div>
+                        </div>
+                      );
+                    });
+                  }}
+                >
+                  (Fase de Estado) Obenter puntos de cultura
+                </Button>
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    startTransition(() => {
+                      advanceTechnologyTurn((effectCategory) => {
+                        addBuilding(effectCategory as BuildingType);
+                      });
+                    });
+                  }}
+                >
+                  (Fase de Estado) Avance gratuito
+                </Button>
               </div>
             </GlassCard>
           </AccordionContent>
