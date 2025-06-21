@@ -172,6 +172,182 @@ export default function Home() {
     }
   }, [counterEvent]);
 
+  // TODO -> SEPARAR
+  const recruitTurn = () => {
+    {
+      // verificar si puedo construir unidades avanzadas
+      const canRecruitAdvancedUnits = settlements.some((settlement) =>
+        settlement.buildings.includes(BuildingType.MARKET)
+      );
+
+      // verificar si ya hay un líder (solo puede haber uno vivo a la vez)
+      let hasLeader = settlements.some((settlement) =>
+        settlement.units.some((unit) => unit === UnitType.LEADER)
+      );
+
+      // buscar todas las ciudades felices
+      const happySettlements = settlements.filter(
+        (settlement) => settlement.happiness === HappinessType.HAPPY
+      );
+
+      // comprobar que el nivel de la ciudad sea menor o igual a la cantidad de unidades que tenga
+      const validSettlements = happySettlements.filter(
+        (settlement) =>
+          calculateSettlementLevel(settlement) > settlement.units.length
+      );
+
+      // construir unidades en todas las ciudades validas, si la ciduad tiene un puerto, construir tambien un barco
+
+      const unitsToRecruit: Record<Settlement["indicator"], UnitType[]> = {
+        [ResourceType.FOOD]: [],
+        [ResourceType.WOOD]: [],
+        [ResourceType.STONE]: [],
+        [ResourceType.SCIENCE]: [],
+        [ResourceType.GOLD]: [],
+      };
+
+      const shipsToRecruit: Record<Settlement["indicator"], number> = {
+        [ResourceType.FOOD]: 0,
+        [ResourceType.WOOD]: 0,
+        [ResourceType.STONE]: 0,
+        [ResourceType.SCIENCE]: 0,
+        [ResourceType.GOLD]: 0,
+      };
+
+      validSettlements.forEach((settlement) => {
+        // seleccionar una unidad por ciudad según rates, respetando un líder único
+        let unitType: UnitType;
+        if (canRecruitAdvancedUnits) {
+          unitType = selectWeightedRandom(DEFAULT_RECRUIT_RATES);
+          if (unitType === UnitType.LEADER) {
+            if (hasLeader) {
+              unitType = UnitType.INFANTRY;
+            } else {
+              // marcamos que ya reclutamos líder
+              hasLeader = true;
+            }
+          }
+        } else {
+          unitType = UnitType.INFANTRY;
+        }
+        unitsToRecruit[settlement.indicator].push(unitType);
+      });
+
+      // comprobar todas las ciudades que tengan puerto y agregar un barco
+      happySettlements.forEach((settlement) => {
+        if (settlement.buildings.includes(BuildingType.PORT)) {
+          // si la ciudad tiene puerto, agregar un barco
+          shipsToRecruit[settlement.indicator] += 1;
+        }
+      });
+
+      // agregar las unidades a las ciudades
+      const updatedSettlements = settlements.map((settlement) => {
+        const newUnits = unitsToRecruit[settlement.indicator];
+        if (newUnits.length > 0) {
+          return {
+            ...settlement,
+            units: [...settlement.units, ...newUnits],
+            ships: settlement.ships
+              ? settlement.ships + shipsToRecruit[settlement.indicator]
+              : shipsToRecruit[settlement.indicator],
+          };
+        }
+        return settlement;
+      });
+
+      setSettlements(updatedSettlements);
+      setTurnSection(
+        <div className="text-white flex flex-col gap-2">
+          <span className="font-bold flex items-center gap-2">
+            ¡Reclutar Unidades!
+          </span>
+          {Object.values(unitsToRecruit).some((units) => units.length > 0) ? (
+            <>
+              <div className="text-sm text-white/60">
+                Se han reclutado unidades en las siguientes ciudades:
+              </div>
+              <div className="text-sm text-white/60">
+                <div className="flex flex-col gap-1">
+                  {Object.entries(unitsToRecruit).map(([indicator, units]) => {
+                    if (units.length === 0) return null;
+                    return (
+                      <div
+                        key={indicator}
+                        className="text-white/60 flex items-center gap-2"
+                      >
+                        {units.map((unit, idx) => (
+                          <span
+                            key={`${indicator}-${idx}`}
+                            className="text-yellow-400 flex items-center gap-1 opacity-80"
+                          >
+                            {UNITS_ICONS[unit]}{" "}
+                            {unit === UnitType.LEADER ? "Líder" : unit}
+                          </span>
+                        ))}
+                        <span>en la ciudad</span>
+                        <Avatar className="inline-block w-5 h-5 border-1 border-white rounded-full">
+                          <AvatarImage
+                            className="w-5 h-5 scale-150"
+                            alt={indicator}
+                            src={IMAGE_RESOURCES[indicator as ResourceType]}
+                          />
+                        </Avatar>
+                        <span className="text-yellow-400">
+                          {
+                            settlements.find(
+                              (settlement) => settlement.indicator === indicator
+                            )?.name
+                          }
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="text-sm text-white/60">
+              No se han reclutado unidades en ninguna ciudad.
+            </div>
+          )}
+          {shipsToRecruit &&
+            Object.values(shipsToRecruit).some((count) => count > 0) && (
+              <div className="text-sm text-white/60 mt-2">
+                Han surcado los mares:
+                <div className="flex gap-1 mt-2 flex-col">
+                  {Object.entries(shipsToRecruit).map(([indicator, count]) => {
+                    if (count === 0) return null;
+                    return (
+                      <div
+                        key={indicator}
+                        className="text-white/60 flex items-center gap-2"
+                      >
+                        <Sailboat className="text-white/60" />
+                        <span>en el puerto de </span>
+                        <Avatar className="inline-block w-5 h-5 mr-1 border-1 border-white rounded-full">
+                          <AvatarImage
+                            className="w-5 h-5 scale-150"
+                            alt={indicator}
+                            src={IMAGE_RESOURCES[indicator as ResourceType]}
+                          />
+                        </Avatar>
+                        {
+                          settlements.find(
+                            (settlement) => settlement.indicator === indicator
+                          )?.name
+                        }
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+        </div>
+      );
+    }
+  };
+
   const processTurn = () => {
     const mapper: Record<IBOActions, () => void> = {
       [IBOActions.ADVANCE]: () => {
@@ -191,182 +367,7 @@ export default function Home() {
         influenceTurn();
       },
       [IBOActions.RECRUIT]: () => {
-        // verificar si puedo construir unidades avanzadas
-        const canRecruitAdvancedUnits = settlements.some((settlement) =>
-          settlement.buildings.includes(BuildingType.MARKET)
-        );
-
-        // verificar si ya hay un líder (solo puede haber uno vivo a la vez)
-        let hasLeader = settlements.some((settlement) =>
-          settlement.units.some((unit) => unit === UnitType.LEADER)
-        );
-
-        // buscar todas las ciudades felices
-        const happySettlements = settlements.filter(
-          (settlement) => settlement.happiness === HappinessType.HAPPY
-        );
-
-        // comprobar que el nivel de la ciudad sea menor o igual a la cantidad de unidades que tenga
-        const validSettlements = happySettlements.filter(
-          (settlement) =>
-            calculateSettlementLevel(settlement) > settlement.units.length
-        );
-
-        // construir unidades en todas las ciudades validas, si la ciduad tiene un puerto, construir tambien un barco
-
-        const unitsToRecruit: Record<Settlement["indicator"], UnitType[]> = {
-          [ResourceType.FOOD]: [],
-          [ResourceType.WOOD]: [],
-          [ResourceType.STONE]: [],
-          [ResourceType.SCIENCE]: [],
-          [ResourceType.GOLD]: [],
-        };
-
-        const shipsToRecruit: Record<Settlement["indicator"], number> = {
-          [ResourceType.FOOD]: 0,
-          [ResourceType.WOOD]: 0,
-          [ResourceType.STONE]: 0,
-          [ResourceType.SCIENCE]: 0,
-          [ResourceType.GOLD]: 0,
-        };
-
-        validSettlements.forEach((settlement) => {
-          // seleccionar una unidad por ciudad según rates, respetando un líder único
-          let unitType: UnitType;
-          if (canRecruitAdvancedUnits) {
-            unitType = selectWeightedRandom(DEFAULT_RECRUIT_RATES);
-            if (unitType === UnitType.LEADER) {
-              if (hasLeader) {
-                unitType = UnitType.INFANTRY;
-              } else {
-                // marcamos que ya reclutamos líder
-                hasLeader = true;
-              }
-            }
-          } else {
-            unitType = UnitType.INFANTRY;
-          }
-          unitsToRecruit[settlement.indicator].push(unitType);
-        });
-
-        // comprobar todas las ciudades que tengan puerto y agregar un barco
-        happySettlements.forEach((settlement) => {
-          if (settlement.buildings.includes(BuildingType.PORT)) {
-            // si la ciudad tiene puerto, agregar un barco
-            shipsToRecruit[settlement.indicator] += 1;
-          }
-        });
-
-        // agregar las unidades a las ciudades
-        const updatedSettlements = settlements.map((settlement) => {
-          const newUnits = unitsToRecruit[settlement.indicator];
-          if (newUnits.length > 0) {
-            return {
-              ...settlement,
-              units: [...settlement.units, ...newUnits],
-              ships: settlement.ships
-                ? settlement.ships + shipsToRecruit[settlement.indicator]
-                : shipsToRecruit[settlement.indicator],
-            };
-          }
-          return settlement;
-        });
-
-        setSettlements(updatedSettlements);
-        setTurnSection(
-          <div className="text-white flex flex-col gap-2">
-            <span className="font-bold flex items-center gap-2">
-              ¡Reclutar Unidades!
-            </span>
-            {Object.values(unitsToRecruit).some((units) => units.length > 0) ? (
-              <>
-                <div className="text-sm text-white/60">
-                  Se han reclutado unidades en las siguientes ciudades:
-                </div>
-                <div className="text-sm text-white/60">
-                  <div className="flex flex-col gap-1">
-                    {Object.entries(unitsToRecruit).map(
-                      ([indicator, units]) => {
-                        if (units.length === 0) return null;
-                        return (
-                          <div
-                            key={indicator}
-                            className="text-white/60 flex items-center gap-2"
-                          >
-                            {units.map((unit, idx) => (
-                              <span
-                                key={`${indicator}-${idx}`}
-                                className="text-yellow-400 flex items-center gap-1 opacity-80"
-                              >
-                                {UNITS_ICONS[unit]}{" "}
-                                {unit === UnitType.LEADER ? "Líder" : unit}
-                              </span>
-                            ))}
-                            <span>en la ciudad</span>
-                            <Avatar className="inline-block w-5 h-5 border-1 border-white rounded-full">
-                              <AvatarImage
-                                className="w-5 h-5 scale-150"
-                                alt={indicator}
-                                src={IMAGE_RESOURCES[indicator as ResourceType]}
-                              />
-                            </Avatar>
-                            <span className="text-yellow-400">
-                              {
-                                settlements.find(
-                                  (settlement) =>
-                                    settlement.indicator === indicator
-                                )?.name
-                              }
-                            </span>
-                          </div>
-                        );
-                      }
-                    )}
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="text-sm text-white/60">
-                No se han reclutado unidades en ninguna ciudad.
-              </div>
-            )}
-            {shipsToRecruit &&
-              Object.values(shipsToRecruit).some((count) => count > 0) && (
-                <div className="text-sm text-white/60 mt-2">
-                  Han surcado los mares:
-                  <div className="flex gap-1 mt-2 flex-col">
-                    {Object.entries(shipsToRecruit).map(
-                      ([indicator, count]) => {
-                        if (count === 0) return null;
-                        return (
-                          <div
-                            key={indicator}
-                            className="text-white/60 flex items-center gap-2"
-                          >
-                            <Sailboat className="text-white/60" />
-                            <span>en el puerto de </span>
-                            <Avatar className="inline-block w-5 h-5 mr-1 border-1 border-white rounded-full">
-                              <AvatarImage
-                                className="w-5 h-5 scale-150"
-                                alt={indicator}
-                                src={IMAGE_RESOURCES[indicator as ResourceType]}
-                              />
-                            </Avatar>
-                            {
-                              settlements.find(
-                                (settlement) =>
-                                  settlement.indicator === indicator
-                              )?.name
-                            }
-                          </div>
-                        );
-                      }
-                    )}
-                  </div>
-                </div>
-              )}
-          </div>
-        );
+        recruitTurn();
       },
     };
 
@@ -473,6 +474,117 @@ export default function Home() {
           Fase de Estado
         </Button>
       </div>
+
+      <Accordion type="single" collapsible>
+        <AccordionItem value="item-1">
+          <AccordionTrigger>Turnos Manuales</AccordionTrigger>
+          <AccordionContent>
+            <GlassCard className="p-4">
+              <div className="flex flex-col gap-2">
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    startTransition(() => {
+                      setTurnSection(
+                        <div className="text-white flex flex-col gap-2">
+                          <span className="font-bold flex items-center gap-2">
+                            ¡Acción Obtenida!
+                          </span>
+                          <div className="text-sm text-white/60">
+                            Se ha obtenido una acción de turno aleatoria.
+                          </div>
+                        </div>
+                      );
+                      const action = selectWeightedRandom(
+                        configuration.actionRates
+                      );
+                      console.log(`Acción obtenida: ${action}`);
+                      setTurnSection(
+                        <div className="text-white flex flex-col gap-2">
+                          <span className="font-bold flex items-center gap-2">
+                            Acción Obtenida: {action}
+                          </span>
+                        </div>
+                      );
+                    });
+                  }}
+                >
+                  Obtener Acción
+                </Button>
+
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    startTransition(() => {
+                      advanceTechnologyTurn((effectCategory) => {
+                        decrementCounterEvent();
+                        addBuilding(effectCategory as BuildingType);
+                      });
+                    });
+                  }}
+                >
+                  Avance Tecnológico
+                </Button>
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    startTransition(() => {
+                      buildTurn();
+                    });
+                  }}
+                >
+                  Construir Edificio
+                </Button>
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    startTransition(() => {
+                      attackTurn();
+                    });
+                  }}
+                >
+                  Atacar Ciudad
+                </Button>
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    startTransition(() => {
+                      influenceTurn();
+                    });
+                  }}
+                >
+                  Influir en Ciudad
+                </Button>
+
+                {/* 
+                    incrementar felicidad de todas las ciudades
+                  */}
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    startTransition(() => {
+                      incrementHappinessAllCities();
+                    });
+                  }}
+                >
+                  Incrementar Felicidad
+                </Button>
+
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    startTransition(() => {
+                      recruitTurn();
+                    });
+                  }}
+                >
+                  Reclutar Unidades
+                </Button>
+              </div>
+            </GlassCard>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
 
       <GlassCard>
         {turnSection || (
