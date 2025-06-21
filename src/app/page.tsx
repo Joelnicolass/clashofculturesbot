@@ -735,6 +735,8 @@ export default function Home() {
                         addBuilding(effectCategory as BuildingType);
                       });
 
+                      incrementCultureCount();
+
                       if (utilizedModalWithResults) {
                         setModalResults(true);
                       }
