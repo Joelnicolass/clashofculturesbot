@@ -793,6 +793,19 @@ export default function Home() {
                   onClick={() => {
                     startTransition(() => {
                       incrementHappinessAllCities();
+
+                      setTurnSection(
+                        <div className="text-white flex flex-col gap-2">
+                          <span className="font-bold flex items-center gap-2">
+                            ¡Felicidad Incrementada!
+                          </span>
+                          <div className="text-sm text-white/60">
+                            Se ha incrementado la felicidad de todas las
+                            ciudades.
+                          </div>
+                        </div>
+                      );
+
                       if (utilizedModalWithResults) {
                         setModalResults(true);
                       }
